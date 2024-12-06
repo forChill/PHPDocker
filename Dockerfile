@@ -55,6 +55,7 @@ COPY --from=dev-deps /app/vendor/ /var/www/html/vendor
 # Stage 5: Production environment
 FROM base as production
 COPY ./src /var/www/html
+COPY ./tests /var/www/html/tests
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 COPY --from=prod-deps /app/vendor/ /var/www/html/vendor
 
