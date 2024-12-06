@@ -18,6 +18,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Debug DOCKER_USERNAME
+        run: echo "DOCKER_USERNAME=${{ vars.DOCKER_USERNAME }}"
+
+      - name: Debug Repository Name
+        run: echo "Repository Name=${{ github.event.repository.name }}"
+
       - name: Build and test
         uses: docker/build-push-action@v6
         with:
