@@ -1,0 +1,317 @@
+# Comments are provided throughout this file to help you get started.
+# If you need more help, visit the Docker Compose reference guide at
+# https://docs.docker.com/go/compose-spec-reference/
+
+# Here the instructions define your application as a service called "server".
+# This service is built from the Dockerfile in the current directory.
+# You can add other services your application may depend on here, such as a
+# database or a cache. For examples, see the Awesome Compose repository:
+# https://github.com/docker/awesome-compose
+# version: '3.8'
+
+# services:
+#   server:
+#     build:
+#       context: .
+#     volumes:
+#       - ./src:/var/www/html/src
+#       - ./tests:/var/www/html/tests
+#     restart: 'always'
+#     ports:
+#       - 9000:80   
+#     # depends_on:
+#     #   - db
+#     #   - redis
+#     #   - elasticsearch
+#     depends_on:
+#       db:
+#         condition: service_healthy
+#       redis:
+#         condition: service_started
+#       elasticsearch:
+#         condition: service_started
+#     secrets:
+#       - db-password
+#     environment:
+#       - PASSWORD_FILE_PATH=/run/secrets/db-password
+#       - DB_HOST=db
+#       - DB_NAME=example
+#       - DB_USER=root
+#     networks:
+#       - app-network
+
+#   # db:
+#   #   image: postgres:13
+#   #   restart: always
+#   #   volumes:
+#   #     - db-data:/var/lib/postgresql/data
+#   #   expose:
+#   #     - 5432
+#   #   healthcheck:
+#   #     test: ["CMD", "pg_isready"]
+#   #     interval: 10s
+#   #     timeout: 5s
+#   #     retries: 5
+#   #   networks:
+#   #     - app-network
+
+
+#   db: #database mysql
+#     image: mariadb
+#     restart: always
+#     user: root
+#     secrets:
+#       - db-password
+#     volumes:
+#       - db-data:/var/lib/mysql
+#     environment:
+#       - MARIADB_ROOT_PASSWORD_FILE=/run/secrets/db-password
+#       - MARIADB_DATABASE=example
+#     expose:
+#       - 3306
+#     healthcheck:
+#       test:
+#         [
+#           "CMD",
+#           "/usr/local/bin/healthcheck.sh",
+#           "--su-mysql",
+#           "--connect",
+#           "--innodb_initialized",
+#         ]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+#     networks:
+#       - app-network
+
+#   phpmyadmin: #phpmyadmin
+#     image: phpmyadmin
+#     ports:
+#       - 8080:80
+#     depends_on:
+#       - db
+#     environment:
+#       - PMA_HOST=db
+#     networks:
+#       - app-network
+
+#   redis: #redis
+#     image: redis:latest
+#     healthcheck:
+#       test: ["CMD", "redis-cli", "ping"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+#     ports:
+#       - 6379:6379
+#     networks:
+#       - app-network
+
+#   elasticsearch: #elsasticSearch
+#     image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+#     environment:
+#       - discovery.type=single-node
+#       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"  # Giới hạn bộ nhớ cho Elasticsearch
+#     ports:
+#       - 9200:9200
+#     volumes:
+#       - es-data:/usr/share/elasticsearch/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep green || exit 1"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+#     networks:
+#       - app-network
+
+#   kibana: #kibana
+#     image: docker.elastic.co/kibana/kibana:8.10.2
+#     depends_on:
+#       - elasticsearch
+#     ports:
+#       - 5601:5601
+#     environment:
+#       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+#     networks:
+#       - app-network
+
+# volumes:
+#   db-data:
+#   es-data:
+
+# networks:
+#   app-network:
+#     driver: bridge
+
+# secrets:
+#   db-password:
+#     file: db/password.txt
+
+
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: .
+      target: development
+    volumes:
+      - ./src:/var/www/html/src
+      - ./tests:/var/www/html/tests
+    restart: 'always'
+    ports:
+      - 9000:80
+    depends_on:
+      - db
+      - redis
+      - elasticsearch
+    # depends_on:
+    #   db:
+    #     condition: service_healthy
+    #   redis:
+    #     condition: service_started
+    #   elasticsearch:
+    #     condition: service_started
+    secrets:
+      - db-password
+    environment:
+      - PASSWORD_FILE_PATH=/run/secrets/db-password
+      - DB_HOST=db
+      - DB_NAME=example
+      - DB_USER=root
+    develop:
+      watch:
+        - action: sync
+          path: ./test
+          target: /var/www/html
+    networks:
+      - app-network
+    # entrypoint: >
+    #   /bin/sh -c "
+    #   ./wait-for-it.sh db:3306 -- echo 'DB is ready';
+    #   ./wait-for-it.sh redis:6379 -- echo 'Redis is ready';
+    #   ./wait-for-it.sh elasticsearch:9200 -- echo 'Elasticsearch is ready';
+    #   php-fpm
+    #   "
+
+  db:
+    image: mariadb
+    restart: always
+    user: root
+    secrets:
+      - db-password
+    volumes:
+      - db-data:/var/lib/mysql
+    environment:
+      - MARIADB_ROOT_PASSWORD_FILE=/run/secrets/db-password
+      - MARIADB_DATABASE=example
+    expose:
+      - 3306
+    healthcheck:
+      test: ["CMD", "mysql", "-u", "root", "-e", "SELECT 1;"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  phpmyadmin:
+    image: phpmyadmin
+    ports:
+      - 8081:80
+    depends_on:
+      - db
+    environment:
+      - PMA_HOST=db
+    networks:
+      - app-network
+
+  redis:
+    image: redis:latest
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - 6379:6379
+    networks:
+      - app-network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ports:
+      - 9200:9200
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -E 'green|yellow' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.2
+    depends_on:
+      - elasticsearch
+    ports:
+      - 5601:5601
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - XPACK_SECURITY_ENABLED=false
+    networks:
+      - app-network
+
+volumes:
+  db-data:
+  es-data:
+
+networks:
+  app-network:
+    driver: bridge
+
+secrets:
+  db-password:
+    file: db/password.txt
+
+
+
+# The commented out section below is an example of how to define a PostgreSQL
+# database that your application can use. `depends_on` tells Docker Compose to
+# start the database before your application. The `db-data` volume persists the
+# database data between container restarts. The `db-password` secret is used
+# to set the database password. You must create `db/password.txt` and add
+# a password of your choosing to it before running `docker-compose up`.
+#     depends_on:
+#       db:
+#         condition: service_healthy
+#   db:
+#     image: postgres
+#     restart: always
+#     user: postgres
+#     secrets:
+#       - db-password
+#     volumes:
+#       - db-data:/var/lib/postgresql/data
+#     environment:
+#       - POSTGRES_DB=example
+#       - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
+#     expose:
+#       - 5432
+#     healthcheck:
+#       test: [ "CMD", "pg_isready" ]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+# volumes:
+#   db-data:
+# secrets:
+#   db-password:
+#     file: db/password.txt
+
