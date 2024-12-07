@@ -45,6 +45,12 @@ RUN composer install --no-dev --no-interaction --prefer-dist
 # Cấu hình mặc định Apache
 COPY ./apache-config/000-default.conf /etc/apache2/sites-available/000-default.conf
 
+# Copy db/password.txt vào container
+COPY ./db/password.txt /var/www/html/db/password.txt
+
+# Đảm bảo quyền đọc cho file password.txt
+RUN chmod 644 /var/www/html/db/password.txt
+
 # Stage 4: Development environment
 FROM base as development
 COPY ./src /var/www/html
