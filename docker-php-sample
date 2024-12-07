@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: docker-php-demo
+  namespace: default
 spec:
   replicas: 1
   selector:
@@ -14,15 +15,14 @@ spec:
     spec:
       containers:
         - name: hello-site
-          image: cuongdock/phpdocker  # Thay i tn hnh nh nu cn
+          image: cuongdock/phpdocker
           imagePullPolicy: Always
-      imagePullSecrets:
-        - name: regcred  # S dng Secret  to
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: php-entrypoint
+  namespace: default
 spec:
   type: NodePort
   selector:
@@ -31,4 +31,3 @@ spec:
     - port: 80
       targetPort: 80
       nodePort: 30001
-
