@@ -6,7 +6,8 @@ WORKDIR /app
 RUN --mount=type=bind,source=composer.json,target=composer.json \
     --mount=type=bind,source=composer.lock,target=composer.lock \
     --mount=type=cache,target=/tmp/cache \
-    composer install --no-dev --no-interaction --prefer-dist
+    #composer install --no-dev --no-interaction --prefer-dist
+    composer install --no-interaction --prefer-dist
 
 # Stage 2: Composer dependencies cho môi trường development
 FROM composer:lts as dev-deps
